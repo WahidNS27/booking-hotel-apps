@@ -17,7 +17,7 @@
 body{
     font-family:"Times New Roman", Times, serif;
     font-size:10pt;
-    line-height:1.35;
+    line-height:1.25;
 }
 
 .container{
@@ -100,6 +100,26 @@ hr{
     margin-top:6px;
 }
 
+.status-paid {
+    color: green;
+    font-weight: bold;
+}
+
+.status-partial {
+    color: orange;
+    font-weight: bold;
+}
+
+.status-refunded {
+    color: red;
+    font-weight: bold;
+}
+
+.status-unpaid {
+    color: blue;
+    font-weight: bold;
+}
+
 </style>
 </head>
 
@@ -129,11 +149,11 @@ To : {{ $reservation->guest->name }}
 <!-- COMPANY SEJAJAR TELP -->
 <tr>
 <td class="left">
-Company / Agent : {{ $reservation->company_agent }}
+Company / Agent : {{ $reservation->company_agent ?? '-' }}
 </td>
 
 <td class="right">
-Telp : {{ $reservation->agent_telp }}
+Telp : {{ $reservation->agent_telp ?? '-' }}
 </td>
 </tr>
 
@@ -146,8 +166,8 @@ Telp : {{ $reservation->agent_telp }}
         </td>
 
 <td class="right">
-Fax : {{ $reservation->agent_fax }} <br>
-Email : {{ $reservation->agent_email }} <br>
+Fax : {{ $reservation->agent_fax ?? '-' }} <br>
+Email : {{ $reservation->agent_email ?? '-' }} <br>
 Date : {{ date('d/m/Y') }}
 </td>
 </tr>
@@ -193,44 +213,174 @@ Date : {{ date('d/m/Y') }}
 <td>: Rp {{ number_format($reservation->room_rate_net,0,',','.') }}</td>
 </tr>
 
+<tr>
+<td>Jumlah Kamar</td>
+<td>: {{ $reservation->number_of_rooms }}</td>
+</tr>
+
+<tr>
+<td>Total Harga</td>
+<td>: Rp {{ number_format($reservation->room_rate_net * $reservation->total_nights * $reservation->number_of_rooms, 0, ',', '.') }}</td>
+</tr>
+
 </table>
 
 <hr>
 
 <div class="section">
 
-Please guarantee this booking with credit card number with clear copy of the card both sides and card holder signature in the column provided.  
-The copy of credit card both sides should be faxed to hotel fax number.  
+@if($reservation->payment_method == 'Bank Transfer')
+    <p>Please guarantee this booking with credit card number with clear copy of the card both sides and card holder signature in the column provided.  
+    The copy of credit card both sides should be faxed to hotel fax number.</p>
+    
+    <p>Please settle your outstanding to our account:</p>
 
-Please settle your outstanding to our account:
+    <br>
+    
+    <b>Bank Transfer</b><br>
+    Mandiri Account : {{ $reservation->bank_account ?? '-' }} <br>
+    Mandiri Name Account : {{ $reservation->bank_account_name ?? '-' }} <br>
+    
+    @if(isset($reservation->payment_status) && $reservation->payment_status != '')
+        <br>
+        <b>Status Pembayaran:</b> 
+        @if($reservation->payment_status == 'paid')
+            <span class="status-paid">Lunas</span>
+        @elseif($reservation->payment_status == 'partial')
+            <span class="status-partial">Dibayar Sebagian</span>
+        @elseif($reservation->payment_status == 'refunded')
+            <span class="status-refunded">Dikembalikan</span>
+        @else
+            <span class="status-unpaid">Belum Dibayar</span>
+        @endif
+    @endif
+    
+    @if(isset($reservation->payment_notes) && $reservation->payment_notes != '')
+        <br>
+        <b>Catatan Pembayaran:</b> {{ $reservation->payment_notes }}
+    @endif
+    
+@elseif($reservation->payment_method == 'Credit Card')
+    <p>Please guarantee this booking with credit card number with clear copy of the card both sides and card holder signature in the column provided.  
+    The copy of credit card both sides should be faxed to hotel fax number.</p>
+    
+    <br>
+    
+    <b>Credit Card Information:</b><br>
+    Card Number : {{ $reservation->masked_cc_number ?? $reservation->cc_number }} <br>
+    Card holder name : {{ $reservation->cc_holder_name ?? '-' }} <br>
+    Card Type : {{ $reservation->cc_type ?? '-' }} <br>
+    Payment Method : {{ $reservation->payment_method }} <br>
+    Expired date : {{ $reservation->cc_expired ?? '-' }} <br>
+    
+    @if(isset($reservation->payment_status) && $reservation->payment_status != '')
+        <br>
+        <b>Status Pembayaran:</b> 
+        @if($reservation->payment_status == 'paid')
+            <span class="status-paid">Lunas</span>
+        @elseif($reservation->payment_status == 'partial')
+            <span class="status-partial">Dibayar Sebagian</span>
+        @elseif($reservation->payment_status == 'refunded')
+            <span class="status-refunded">Dikembalikan</span>
+        @else
+            <span class="status-unpaid">Belum Dibayar</span>
+        @endif
+    @endif
+    
+    @if(isset($reservation->payment_notes) && $reservation->payment_notes != '')
+        <br>
+        <b>Catatan Pembayaran:</b> {{ $reservation->payment_notes }}
+    @endif
+    
+@elseif($reservation->payment_method == 'Cash')
+    <p><b>Pembayaran Tunai (Cash)</b></p>
+    <p>Pembayaran akan dilakukan secara tunai saat check-in di hotel.</p>
+    <p>Harap siapkan uang tunai sesuai dengan total tagihan Anda.</p>
+    
+    <br>
+    
+    <b>Detail Pembayaran Tunai:</b><br>
+    Total Pembayaran : Rp {{ number_format($reservation->room_rate_net * $reservation->total_nights * $reservation->number_of_rooms, 0, ',', '.') }} <br>
+    Metode Pembayaran : Tunai (Cash) <br>
+    
+    @if(isset($reservation->payment_status) && $reservation->payment_status != '')
+        Status Pembayaran : 
+        @if($reservation->payment_status == 'paid')
+            <span class="status-paid">Lunas</span>
+        @elseif($reservation->payment_status == 'partial')
+            <span class="status-partial">Dibayar Sebagian</span>
+        @elseif($reservation->payment_status == 'refunded')
+            <span class="status-refunded">Dikembalikan</span>
+        @else
+            <span class="status-unpaid">Belum Dibayar (akan dibayar saat check-in)</span>
+        @endif
+        <br>
+    @else
+        Status Pembayaran : <span class="status-unpaid">Belum Dibayar (akan dibayar saat check-in)</span><br>
+    @endif
+    
+    @if(isset($reservation->payment_notes) && $reservation->payment_notes != '')
+        <br>
+        <b>Catatan Pembayaran:</b><br>
+        {{ $reservation->payment_notes }} <br>
+    @endif
+    
+    <br>
+    <b>Rincian Harga:</b><br>
+    Harga per Malam : Rp {{ number_format($reservation->room_rate_net, 0, ',', '.') }} <br>
+    Jumlah Kamar : {{ $reservation->number_of_rooms }} kamar <br>
+    Jumlah Malam : {{ $reservation->total_nights }} malam <br>
+    <b>Total Keseluruhan : Rp {{ number_format($reservation->room_rate_net * $reservation->total_nights * $reservation->number_of_rooms, 0, ',', '.') }}</b>
+    
+@else
+    <p>Please guarantee this booking with credit card number with clear copy of the card both sides and card holder signature in the column provided.  
+    The copy of credit card both sides should be faxed to hotel fax number.</p>
+    
+    <p>Please settle your outstanding to our account:</p>
 
-<br><br>
-
-<b>Bank Transfer</b><br>
-
-Mandiri Account : {{ $reservation->bank_account }} <br>
-Mandiri Name Account : {{ $reservation->bank_account_name }}
+    <br>
+    
+    <b>Bank Transfer</b><br>
+    Mandiri Account : {{ $reservation->bank_account ?? '-' }} <br>
+    Mandiri Name Account : {{ $reservation->bank_account_name ?? '-' }} <br>
+    
+    @if(isset($reservation->payment_status) && $reservation->payment_status != '')
+        <br>
+        <b>Status Pembayaran:</b> 
+        @if($reservation->payment_status == 'paid')
+            <span class="status-paid">Lunas</span>
+        @elseif($reservation->payment_status == 'partial')
+            <span class="status-partial">Dibayar Sebagian</span>
+        @elseif($reservation->payment_status == 'refunded')
+            <span class="status-refunded">Dikembalikan</span>
+        @else
+            <span class="status-unpaid">Belum Dibayar</span>
+        @endif
+    @endif
+@endif
 
 </div>
 
 <hr>
 
+@if($reservation->payment_method == 'Credit Card')
 <div class="section">
 
 <b>Reservation guaranteed by the following credit card:</b>
 
 <br><br>
 
-Card Number : {{ $reservation->cc_number }} <br>
+Card Number : {{ $reservation->masked_cc_number ?? $reservation->cc_number }} <br>
 Card holder name : {{ $reservation->cc_holder_name }} <br>
 Card Type : {{ $reservation->cc_type }} <br>
 Payment Method : {{ $reservation->payment_method }} <br>
 Expired date / month / year : {{ $reservation->cc_expired }} <br>
-Card holder signature :
+Card holder signature : ___________________________________
 
 </div>
 
 <hr>
+@endif
 
 <div class="policy">
 
@@ -265,4 +415,4 @@ Date : {{ \Carbon\Carbon::parse($reservation->created_at)->format('d/m/Y') }}
 </div>
 
 </body>
-</html> 
+</html>

@@ -104,54 +104,131 @@
     </div>
     
     {{-- Payment Information --}}
-    <div class="mt-6 pt-6 border-t">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">Payment Information</h3>
-        
-        @if($reservation->payment_method)
-            <div class="bg-blue-50 p-4 rounded-xl">
-                <p class="text-sm text-gray-600">Payment Method: <span class="font-semibold">{{ $reservation->payment_method_indonesian }}</span></p>
-                
-                @if($reservation->payment_method == 'Bank Transfer')
-                    <div class="mt-3 grid grid-cols-2 gap-4">
-                        <div>
-                            <p class="text-sm text-gray-600">Bank Account:</p>
-                            <p class="font-semibold">{{ $reservation->bank_account ?? '-' }}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-600">Account Name:</p>
-                            <p class="font-semibold">{{ $reservation->bank_account_name ?? '-' }}</p>
-                        </div>
-                    </div>
-                @elseif($reservation->payment_method == 'Credit Card')
-                    <div class="mt-3 grid grid-cols-2 gap-4">
-                        <div>
-                            <p class="text-sm text-gray-600">Card Number:</p>
-                            <p class="font-semibold">{{ $reservation->masked_cc_number ?? '-' }}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-600">Card Holder:</p>
-                            <p class="font-semibold">{{ $reservation->cc_holder_name ?? '-' }}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-600">Card Type:</p>
-                            <p class="font-semibold">{{ $reservation->cc_type ?? '-' }}</p>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-600">Expired:</p>
-                            <p class="font-semibold">{{ $reservation->cc_expired ?? '-' }}</p>
-                        </div>
-                    </div>
-                @endif
+{{-- Payment Information --}}
+<div class="mt-6 pt-6 border-t">
+    <h3 class="text-lg font-semibold text-gray-800 mb-4">Payment Information</h3>
+    
+    @if($reservation->payment_method)
+        <div class="bg-blue-50 p-4 rounded-xl">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                <div>
+                    <p class="text-sm text-gray-600">Payment Method:</p>
+                    <p class="font-semibold text-primary">{{ $reservation->payment_method_indonesian ?? $reservation->payment_method }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Payment Status:</p>
+                    @php
+                        $statusClass = '';
+                        $statusText = '';
+                        
+                        if(isset($reservation->payment_status)) {
+                            switch($reservation->payment_status) {
+                                case 'paid':
+                                    $statusClass = 'bg-green-100 text-green-800';
+                                    $statusText = 'Lunas';
+                                    break;
+                                case 'partial':
+                                    $statusClass = 'bg-yellow-100 text-yellow-800';
+                                    $statusText = 'Dibayar Sebagian';
+                                    break;
+                                case 'refunded':
+                                    $statusClass = 'bg-red-100 text-red-800';
+                                    $statusText = 'Dikembalikan';
+                                    break;
+                                default:
+                                    $statusClass = 'bg-blue-100 text-blue-800';
+                                    $statusText = 'Belum Dibayar';
+                            }
+                        } else {
+                            $statusClass = 'bg-blue-100 text-blue-800';
+                            $statusText = 'Belum Dibayar';
+                        }
+                    @endphp
+                    <span class="{{ $statusClass }} px-3 py-1 rounded-full text-xs font-semibold inline-block">
+                        {{ $statusText }}
+                    </span>
+                </div>
             </div>
-        @else
-            <div class="bg-yellow-50 p-4 rounded-xl">
-                <p class="text-yellow-800">Belum ada informasi pembayaran. Silakan lakukan pembayaran untuk menjamin reservasi.</p>
-                <button onclick="showPaymentModal()" class="mt-3 px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition">
-                    <i class="fas fa-credit-card mr-2"></i>Proses Pembayaran
-                </button>
+            
+            {{-- Total Harga --}}
+            <div class="mb-3 p-3 bg-white rounded-lg">
+                <p class="text-sm text-gray-600">Total Harga:</p>
+                <p class="text-xl font-bold text-primary">
+                    Rp {{ number_format($reservation->room_rate_net * $reservation->total_nights * $reservation->number_of_rooms, 0, ',', '.') }}
+                </p>
+                <p class="text-xs text-gray-500">
+                    ({{ $reservation->room_rate_net }} x {{ $reservation->number_of_rooms }} kamar x {{ $reservation->total_nights }} malam)
+                </p>
             </div>
-        @endif
-    </div>
+            
+            {{-- Detail berdasarkan metode pembayaran --}}
+            @if($reservation->payment_method == 'Bank Transfer')
+                <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-600">Bank Account:</p>
+                        <p class="font-semibold">{{ $reservation->bank_account ?? '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Account Name:</p>
+                        <p class="font-semibold">{{ $reservation->bank_account_name ?? '-' }}</p>
+                    </div>
+                </div>
+            @elseif($reservation->payment_method == 'Credit Card')
+                <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-600">Card Number:</p>
+                        <p class="font-semibold">{{ $reservation->masked_cc_number ?? $reservation->cc_number ?? '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Card Holder:</p>
+                        <p class="font-semibold">{{ $reservation->cc_holder_name ?? '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Card Type:</p>
+                        <p class="font-semibold">{{ $reservation->cc_type ?? '-' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Expired:</p>
+                        <p class="font-semibold">{{ $reservation->cc_expired ?? '-' }}</p>
+                    </div>
+                </div>
+            @elseif($reservation->payment_method == 'Cash')
+                <div class="mt-3">
+                    <div class="bg-green-50 p-3 rounded-lg">
+                        <p class="text-sm text-green-700 font-semibold flex items-center">
+                            <i class="fas fa-money-bill-wave mr-2"></i>
+                            Pembayaran Tunai akan dilakukan saat check-in
+                        </p>
+                        @if($reservation->payment_status == 'paid')
+                            <p class="text-xs text-green-600 mt-1">
+                                <i class="fas fa-check-circle mr-1"></i>Pembayaran sudah lunas
+                            </p>
+                        @elseif($reservation->payment_status == 'partial')
+                            <p class="text-xs text-yellow-600 mt-1">
+                                <i class="fas fa-exclamation-circle mr-1"></i>Pembayaran sebagian telah diterima
+                            </p>
+                        @endif
+                    </div>
+                </div>
+            @endif
+            
+            {{-- Catatan Pembayaran --}}
+            @if(isset($reservation->payment_notes) && $reservation->payment_notes)
+                <div class="mt-3 p-3 bg-gray-100 rounded-lg">
+                    <p class="text-sm text-gray-600 font-semibold">Catatan Pembayaran:</p>
+                    <p class="text-sm text-gray-800 mt-1">{{ $reservation->payment_notes }}</p>
+                </div>
+            @endif
+        </div>
+    @else
+        <div class="bg-yellow-50 p-4 rounded-xl">
+            <p class="text-yellow-800">Belum ada informasi pembayaran. Silakan lakukan pembayaran untuk menjamin reservasi.</p>
+            <button onclick="showPaymentModal()" class="mt-3 px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition">
+                <i class="fas fa-credit-card mr-2"></i>Proses Pembayaran
+            </button>
+        </div>
+    @endif
+</div>
     
     {{-- Additional Info --}}
     <div class="mt-6 pt-6 border-t grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">

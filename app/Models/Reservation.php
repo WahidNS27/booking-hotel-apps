@@ -50,6 +50,8 @@ class Reservation extends Model
         'issued_date',
         'status',
         'cancellation_number',
+        'payment_status', // TAMBAHKAN INI
+        'payment_notes',  // TAMBAHKAN INI
     ];
 
     /**

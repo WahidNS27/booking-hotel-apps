@@ -15,14 +15,44 @@ class ReservationController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        $reservations = Reservation::with('guest')
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
-            
-        return view('reservations.index', compact('reservations'));
+    public function index(Request $request)
+{
+    $query = Reservation::with('guest');
+    
+    // Fitur Pencarian
+    if ($request->has('search') && !empty($request->search)) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('booking_no', 'LIKE', "%{$search}%")
+              ->orWhere('room_type', 'LIKE', "%{$search}%")
+              ->orWhereHas('guest', function($guestQuery) use ($search) {
+                  $guestQuery->where('name', 'LIKE', "%{$search}%")
+                            ->orWhere('phone', 'LIKE', "%{$search}%")
+                            ->orWhere('email', 'LIKE', "%{$search}%");
+              });
+        });
     }
+    
+    // Fitur Filter berdasarkan status (opsional)
+    if ($request->has('status') && !empty($request->status)) {
+        $query->where('status', $request->status);
+    }
+    
+    // Fitur Filter berdasarkan rentang tanggal (opsional)
+    if ($request->has('date_from') && !empty($request->date_from)) {
+        $query->whereDate('arrival_date', '>=', $request->date_from);
+    }
+    
+    if ($request->has('date_to') && !empty($request->date_to)) {
+        $query->whereDate('departure_date', '<=', $request->date_to);
+    }
+    
+    $reservations = $query->orderBy('created_at', 'desc')
+                          ->paginate(10)
+                          ->withQueryString(); // Mempertahankan parameter query
+    
+    return view('reservations.index', compact('reservations'));
+}
 
     /**
      * Show the form for creating a new resource.
@@ -72,7 +102,7 @@ class ReservationController extends Controller
             
             // Data Harga & Pembayaran
             'room_rate_net' => 'nullable|integer',
-            'payment_method' => 'nullable|in:Bank Transfer,Credit Card,Cash',
+            'payment_method' => 'nullable|in:Bank Transfer,Credit Card,Cash', 
             'status' => 'nullable|in:guaranteed,non-guaranteed,cancelled,checked-in,checked-out',
             
             // Data Bank Transfer
@@ -163,6 +193,9 @@ class ReservationController extends Controller
             // Status
             'status' => $validated['status'] ?? 'non-guaranteed',
             'cancellation_number' => $validated['cancellation_number'] ?? null,
+            // PAYMENT STATUS & NOTES - UBAH VALIDASI INI
+        'payment_status' => 'nullable|in:unpaid,partial,paid,refunded',
+        'payment_notes' => 'nullable|string|max:500',
         ];
         
         // Simpan ke database dengan transaksi
@@ -225,7 +258,7 @@ class ReservationController extends Controller
             'departure_date' => 'required|date|after:arrival_date',
             'room_rate_net' => 'nullable|integer',
             'status' => 'nullable|in:guaranteed,non-guaranteed,cancelled,checked-in,checked-out',
-            'payment_method' => 'required|in:cash,credit_card,bank_transfer',
+            'payment_method' => 'nullable|in:Bank Transfer,Credit Card,Cash',
             
             // Bank Transfer
             'bank_account' => 'nullable|string',
@@ -237,6 +270,10 @@ class ReservationController extends Controller
             'cc_type' => 'nullable|string|max:50',
             'cc_expired' => 'nullable|string|max:10',
             'cc_signature' => 'nullable|string',
+
+            // PAYMENT STATUS & NOTES - TAMBAHKAN INI
+        'payment_status' => 'nullable|in:unpaid,partial,paid,refunded',
+        'payment_notes' => 'nullable|string',
             
             // Data lainnya
             'company_agent' => 'nullable|string',

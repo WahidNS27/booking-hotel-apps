@@ -189,7 +189,7 @@
                         </label>
                         <input type="date" name="arrival_date" id="arrival_date" required
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring focus:ring-primary/20"
-                               value="{{ old('arrival_date', $reservation->arrival_date) }}">
+                               value="{{ old('arrival_date', \Carbon\Carbon::parse($reservation->arrival_date)->format('Y-m-d')) }}">
                     </div>
                     
                     <div>
@@ -207,8 +207,16 @@
                         </label>
                         <input type="date" name="departure_date" id="departure_date" required
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring focus:ring-primary/20"
-                               value="{{ old('departure_date', $reservation->departure_date) }}">
+                               value="{{ old('departure_date', \Carbon\Carbon::parse($reservation->departure_date)->format('Y-m-d')) }}">
                     </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Total Malam</label>
+                        <input type="text" id="total_nights_display" readonly
+                               class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700"
+                               value="{{ $reservation->total_nights }} malam">
+                    </div>
+                </div>
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Total Malam</label>
@@ -280,10 +288,27 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">Metode Pembayaran</label>
                     <select name="payment_method" id="payment_method" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring focus:ring-primary/20">
                         <option value="">Pilih Metode Pembayaran</option>
-                        <option value="Bank Transfer" {{ old('payment_method', $reservation->payment_method) == 'Bank Transfer' ? 'selected' : '' }}>Bank Transfer</option>
-                        <option value="Credit Card" {{ old('payment_method', $reservation->payment_method) == 'Credit Card' ? 'selected' : '' }}>Credit Card</option>
+                        <option value="Bank Transfer" {{ old('payment_method', $reservation->payment_method) == 'Bank Transfer' ? 'selected' : '' }}>Transfer Bank</option>
+                        <option value="Credit Card" {{ old('payment_method', $reservation->payment_method) == 'Credit Card' ? 'selected' : '' }}>Kartu Kredit</option>
+                        <option value="Cash" {{ old('payment_method', $reservation->payment_method) == 'Cash' ? 'selected' : '' }}>Tunai</option>
                     </select>
                 </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Status Pembayaran</label>
+                    <select name="payment_status" id="payment_status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring focus:ring-primary/20">
+                        <option value="unpaid" {{ old('payment_status', $reservation->payment_status ?? 'unpaid') == 'unpaid' ? 'selected' : '' }}>Belum Dibayar</option>
+                        <option value="partial" {{ old('payment_status', $reservation->payment_status ?? '') == 'partial' ? 'selected' : '' }}>Dibayar Sebagian</option>
+                        <option value="paid" {{ old('payment_status', $reservation->payment_status ?? '') == 'paid' ? 'selected' : '' }}>Lunas</option>
+                        <option value="refunded" {{ old('payment_status', $reservation->payment_status ?? '') == 'refunded' ? 'selected' : '' }}>Dikembalikan</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="mt-4" id="paymentNotesField">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Catatan Pembayaran</label>
+                <textarea name="payment_notes" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring focus:ring-primary/20">{{ old('payment_notes', $reservation->payment_notes ?? '') }}</textarea>
+            </div>
             </div>
         </div>
         

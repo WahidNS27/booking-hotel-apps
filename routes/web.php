@@ -13,6 +13,7 @@ Route::post('/login', [LoginController::class,'store']);
 
    // Route dashboard - SESUAIKAN DENGAN YANG ANDA PAKAI
 Route::get('/dashboard', [LoginController::class, 'dashboard'])->name('dashboard');
+Route::get('/dashboard/checklists', [App\Http\Controllers\LoginController::class, 'getCheckLists'])->name('dashboard.checklists');
 
 Route::get('/logout', [LoginController::class,'logout']);
 
